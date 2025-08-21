@@ -20,174 +20,99 @@
             background-color: var(--bg-color);
             color: var(--primary-text-color);
             margin: 0;
-            height: 100%;
-            overflow: hidden; /* Prevent whole page from scrolling */
-        }
-        #app {
-            display: grid;
-            grid-template-columns: 400px 1fr; 
             height: 100vh;
-            gap: 1rem;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-        #chat-container {
-            display: flex;
-            flex-direction: column;
-            background-color: var(--surface-color);
-            border-radius: 12px;
-            overflow: hidden; /* Important for child scrolling */
-        }
-        #chat-log {
-            flex-grow: 1; /* Allows this element to fill available space */
-            padding: 1rem;
-            overflow-y: auto; /* Makes only the log scrollable */
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-        .chat-message {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            line-height: 1.5;
-            max-width: 90%;
-            white-space: pre-wrap; /* Respect newlines in messages */
-        }
-        .user-message {
-            background-color: var(--accent-color);
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-        .agent-message {
-            background-color: #3a3a3c;
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
-        }
-        #message-input-container {
-            padding: 1rem;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 0.5rem;
-        }
-        #message-input {
-            flex-grow: 1;
-            padding: 0.75rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background-color: var(--bg-color);
-            color: var(--primary-text-color);
-            font-size: 1rem;
-        }
-        #send-btn {
-            padding: 0.75rem 1rem;
-            border: none;
-            border-radius: 8px;
-            background-color: var(--accent-color);
-            color: white;
-            cursor: pointer;
-            font-size: 1rem;
-        }
-        #presentation-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            position: relative;
-        }
-        #slide-iframe-container {
-            width: 100%;
-            flex-grow: 1;
-            aspect-ratio: 16 / 9;
-            background-color: #000;
-            border-radius: 8px;
+            width: 100vw;
             overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s ease;
         }
+        #app { display: grid; grid-template-columns: 1fr 240px; height: 100%; }
+        #main-content { display: grid; grid-template-columns: 400px 1fr; gap: 1rem; padding: 1rem; box-sizing: border-box; overflow: hidden; }
+        #side-panel { display: flex; flex-direction: column; gap: 1rem; min-height: 0; }
+        #chat-container { display: flex; flex-direction: column; background-color: var(--surface-color); border-radius: 12px; overflow: hidden; flex-grow: 1; min-height: 0; }
+        #chat-log { flex-grow: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+        .chat-message { padding: 0.75rem 1rem; border-radius: 8px; line-height: 1.5; max-width: 90%; white-space: pre-wrap; }
+        .user-message { background-color: var(--accent-color); color: white; align-self: flex-end; }
+        .agent-message { background-color: #3a3a3c; align-self: flex-start; }
+        #message-input-container { padding: 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; }
+        #message-input { flex-grow: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--primary-text-color); font-size: 1rem; }
+        #send-btn { padding: 0.75rem 1rem; border: none; border-radius: 8px; background-color: var(--accent-color); color: white; cursor: pointer; font-size: 1rem; }
+        #layers-panel-container { background-color: var(--surface-color); border-radius: 12px; display: flex; flex-direction: column; height: 40%; flex-shrink: 0; }
+        #layers-panel-header { padding: 0.75rem; font-weight: bold; border-bottom: 1px solid var(--border-color); }
+        #layers-list { padding: 0.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+        .layer-item { background-color: #3a3a3c; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: grab; display: flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; }
+        .layer-item.dragging { opacity: 0.5; background: var(--accent-color); }
+        .layer-item:hover { border-color: var(--secondary-text-color); }
+        #editor-area { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
+        #toolbar { background-color: var(--surface-color); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+        .toolbar-btn { background: none; border: 1px solid transparent; color: var(--primary-text-color); font-size: 1rem; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; }
+        .toolbar-btn:hover:not(:disabled) { background-color: var(--border-color); }
+        .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        #presentation-container { display: flex; flex-direction: column; gap: 0.5rem; position: relative; flex-grow: 1; min-height: 0; }
+        #slide-iframe-container { width: 100%; flex-grow: 1; aspect-ratio: 16 / 9; background-color: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
         #slide-iframe { width: 100%; height: 100%; border: none; }
-        #nav-controls { display: flex; justify-content: space-between; align-items: center; }
-        .nav-btn {
-            padding: 0.5rem 1rem;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            background-color: var(--surface-color);
-            color: var(--primary-text-color);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+        #nav-controls { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .nav-btn { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--surface-color); color: var(--primary-text-color); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
         .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         #slide-counter { font-size: 0.9rem; color: var(--secondary-text-color); }
-        
-        #maximize-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            border: none;
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            z-index: 10;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-        #presentation-container:hover #maximize-btn { opacity: 1; }
-
+        #slide-sorter-container { background-color: var(--bg-color); padding: 0.5rem; overflow-y: auto; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.75rem; }
+        .slide-thumbnail { width: 100%; aspect-ratio: 16 / 9; background-color: #000; border: 2px solid var(--border-color); border-radius: 4px; cursor: pointer; position: relative; overflow: hidden; flex-shrink: 0; }
+        .slide-thumbnail.selected { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+        .thumbnail-iframe { width: 1280px; height: 720px; transform-origin: top left; transform: scale(calc(220 / 1280)); border: none; pointer-events: none; }
+        .thumbnail-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--secondary-text-color); background-color: rgba(0,0,0,0.5); }
         @media (max-width: 1024px) {
-            #app { 
-                grid-template-columns: 1fr; 
-                height: auto; /* Allow page to grow on mobile */
-                overflow-y: auto; /* Allow whole page to scroll on mobile */
-            }
-            #chat-container { 
-                min-height: 40vh; 
-                max-height: 50vh; /* Constrain chat height */
-            }
+            #app { grid-template-columns: 1fr; overflow-y: auto; }
+            #slide-sorter-container { display: none; }
+            #main-content { grid-template-columns: 1fr; padding: 0.5rem; }
+            #side-panel { order: 2; flex-direction: row; height: 50vh; }
+            #chat-container { width: 60%; }
+            #layers-panel-container { width: 40%; }
+            #editor-area { order: 1; }
         }
     </style>
 </head>
 <body>
     <div id="app">
-        <div id="chat-container">
-            <div id="chat-log">
-                <div class="agent-message">Hello! What kind of presentation can I create for you today? Please provide a topic (e.g., "The Solar System").</div>
+        <div id="main-content">
+            <div id="side-panel">
+                <div id="chat-container">
+                    <div id="chat-log"><div class="agent-message">Hello! What kind of presentation can I create for you today?</div></div>
+                    <div id="message-input-container">
+                        <input id="message-input" placeholder="Type your message..."><button id="send-btn"><i class="fa fa-paper-plane"></i></button>
+                    </div>
+                </div>
+                <div id="layers-panel-container">
+                    <div id="layers-panel-header">Layers</div>
+                    <div id="layers-list"></div>
+                </div>
             </div>
-            <div id="message-input-container">
-                <input id="message-input" placeholder="Type your message...">
-                <button id="send-btn"><i class="fa fa-paper-plane"></i></button>
+            <div id="editor-area">
+                <div id="toolbar">
+                    <button id="btn-bold" class="toolbar-btn" title="Bold"><i class="fa fa-bold"></i></button>
+                    <button id="btn-italic" class="toolbar-btn" title="Italic"><i class="fa fa-italic"></i></button>
+                    <button id="btn-underline" class="toolbar-btn" title="Underline"><i class="fa fa-underline"></i></button>
+                </div>
+                <div id="presentation-container">
+                    <div id="slide-iframe-container"><iframe id="slide-iframe" title="Presentation Slide"></iframe></div>
+                    <div id="nav-controls">
+                        <button id="prev-btn" class="nav-btn" disabled>Previous</button>
+                        <span id="slide-counter">Slide 0 / 0</span>
+                        <button id="next-btn" class="nav-btn" disabled>Next</button>
+                        <button id="export-btn" class="nav-btn" style="margin-left: auto;"><i class="fa fa-file-powerpoint"></i> Export PPTX</button>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="presentation-container">
-            <button id="maximize-btn"><i class="fa fa-expand"></i></button>
-            <div id="slide-iframe-container">
-                <iframe id="slide-iframe" title="Presentation Slide"></iframe>
-            </div>
-            <div id="nav-controls">
-                <button id="prev-btn" class="nav-btn" disabled>Previous</button>
-                <span id="slide-counter">Slide 0 / 0</span>
-                <button id="next-btn" class="nav-btn" disabled>Next</button>
-                <button id="export-btn" class="nav-btn" style="margin-left: auto;">
-                    <i class="fa fa-file-powerpoint"></i> Export PPTX
-                </button>
-            </div>
-        </div>
+        <div id="slide-sorter-container"></div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            let conversationHistory = [];
-            let finalSlides = [];
+            let finalSlides = []; 
             let currentSlideIndex = 0;
+            let conversationHistory = [];
             let conversationId = `conv_${Date.now()}`;
+            let selectedElementInfo = { id: null, type: null };
 
+            const slideSorterContainer = document.getElementById('slide-sorter-container');
             const chatLog = document.getElementById('chat-log');
             const messageInput = document.getElementById('message-input');
             const sendBtn = document.getElementById('send-btn');
@@ -195,22 +120,108 @@
             const prevBtn = document.getElementById('prev-btn');
             const nextBtn = document.getElementById('next-btn');
             const slideCounter = document.getElementById('slide-counter');
-            const maximizeBtn = document.getElementById('maximize-btn');
-            const presentationContainer = document.getElementById('presentation-container');
             const exportBtn = document.getElementById('export-btn');
+            const btnBold = document.getElementById('btn-bold');
+            const btnItalic = document.getElementById('btn-italic');
+            const btnUnderline = document.getElementById('btn-underline');
+            const layersList = document.getElementById('layers-list');
 
             sendBtn.addEventListener('click', handleSendMessage);
-            messageInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage();
-                }
-            });
+            messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
             prevBtn.addEventListener('click', showPreviousSlide);
             nextBtn.addEventListener('click', showNextSlide);
-            maximizeBtn.addEventListener('click', toggleMaximize);
             exportBtn.addEventListener('click', handleExport);
+            btnBold.addEventListener('click', () => formatText('bold'));
+            btnItalic.addEventListener('click', () => formatText('italic'));
+            btnUnderline.addEventListener('click', () => formatText('underline'));
 
+            window.addEventListener('message', (event) => {
+                const { type, payload } = event.data;
+                if (type === 'selection_change') {
+                    selectedElementInfo = { id: payload.elementId, type: payload.elementType };
+                    updateToolbarState();
+                } else if (type === 'element_update') {
+                    if (!payload.elementId || !payload.newProps) return;
+                    updateFinalSlidesDOM(payload.elementId, payload.newProps);
+                } else if (type === 'SAVE_SLIDE_STATE') {
+                    saveCurrentSlideEdits();
+                } else if (type === 'EDITOR_READY') {
+                    // --- CRITICAL FIX: Only render layers panel when the editor is ready ---
+                    renderLayersPanel();
+                }
+            });
+            
+            function updateFinalSlidesDOM(elementId, newProps) {
+                let currentHtml = finalSlides[currentSlideIndex];
+                if (!currentHtml) return;
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(currentHtml, 'text/html');
+                const elementToUpdate = doc.getElementById(elementId);
+                if (elementToUpdate) {
+                    if (newProps.style) {
+                         elementToUpdate.setAttribute('style', newProps.style);
+                    }
+                    if (typeof newProps.content !== 'undefined') {
+                        elementToUpdate.innerHTML = newProps.content;
+                    }
+                    finalSlides[currentSlideIndex] = doc.documentElement.outerHTML;
+                }
+            }
+
+            function formatText(command) {
+                if (selectedElementInfo.type === 'textbox' && slideIframe.contentWindow) {
+                    slideIframe.contentWindow.postMessage({ type: 'FORMAT_TEXT', payload: { command } }, '*');
+                }
+            }
+
+            function updateToolbarState() {
+                const isTextboxSelected = selectedElementInfo.type === 'textbox';
+                btnBold.disabled = !isTextboxSelected;
+                btnItalic.disabled = !isTextboxSelected;
+                btnUnderline.disabled = !isTextboxSelected;
+            }
+
+            async function handleSendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+                addMessageToLog('user', message);
+                conversationHistory.push({ role: 'user', content: message });
+                messageInput.value = '';
+                sendBtn.disabled = true;
+                try {
+                    const response = await fetch('/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ conversation_id: conversationId, history: conversationHistory })
+                    });
+                    if (!response.ok) { throw new Error(`Server error: ${response.statusText}`); }
+                    const reader = response.body.getReader();
+                    const decoder = new TextDecoder();
+                    let buffer = '';
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        let boundary;
+                        while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+                            const dataStr = buffer.substring(0, boundary).trim();
+                            buffer = buffer.substring(boundary + 2);
+                            if (dataStr.startsWith('data: ')) {
+                                try {
+                                    const json = JSON.parse(dataStr.substring(6));
+                                    await processStreamEvent(json);
+                                } catch (e) { console.warn("Error parsing stream data:", e); }
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error("Failed to send message:", error);
+                    addMessageToLog('agent', "Sorry, I encountered an error. Please try again.");
+                } finally {
+                    sendBtn.disabled = false;
+                }
+            }
+            
             function addMessageToLog(sender, text) {
                 const messageEl = document.createElement('div');
                 messageEl.classList.add('chat-message', `${sender}-message`);
@@ -219,68 +230,61 @@
                 chatLog.scrollTop = chatLog.scrollHeight;
             }
 
-            async function handleSendMessage() {
-                const message = messageInput.value.trim();
-                if (!message) return;
-
-                addMessageToLog('user', message);
-                conversationHistory.push({ role: 'user', content: message });
-                messageInput.value = '';
-                sendBtn.disabled = true;
-
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        conversation_id: conversationId,
-                        history: conversationHistory
-                    })
-                });
-
-                const reader = response.body.getReader();
-                const decoder = new TextDecoder();
-                let buffer = '';
-
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    buffer += decoder.decode(value, { stream: true });
-                    
-                    let boundary;
-                    while ((boundary = buffer.indexOf('\n\n')) !== -1) {
-                        const dataStr = buffer.substring(0, boundary).trim();
-                        buffer = buffer.substring(boundary + 2);
-                        if (dataStr.startsWith('data: ')) {
-                            try {
-                                const json = JSON.parse(dataStr.substring(6));
-                                processStreamEvent(json);
-                            } catch (e) { console.warn("Error parsing stream data:", e); }
-                        }
-                    }
-                }
-                sendBtn.disabled = false;
-            }
-
-            function processStreamEvent(event) {
+            async function processStreamEvent(event) {
                 const data = event.data;
                 if (event.type === 'status_update') {
                     addMessageToLog('agent', data.message);
                     conversationHistory.push({ role: 'agent', content: data.message });
                 } else if (event.type === 'new_slide' || event.type === 'slide_update') {
-                    if (event.type === 'new_slide') {
-                        finalSlides.push(data.html);
-                    } else { // slide_update
-                        finalSlides[data.slide_number - 1] = data.html;
-                    }
-                    currentSlideIndex = data.slide_number - 1;
-                    renderSlide();
+                    const slideIndex = data.slide_number - 1;
+                    finalSlides[slideIndex] = data.html;
+                    currentSlideIndex = slideIndex;
+                    renderCurrentSlide();
+                    renderSlideSorter();
                 }
             }
 
-            function renderSlide() {
-                if (finalSlides.length === 0) return;
+            function renderCurrentSlide() {
+                if (finalSlides.length === 0 || !finalSlides[currentSlideIndex]) {
+                    // Clear panels if no slide is active
+                    layersList.innerHTML = '';
+                    return;
+                };
                 slideIframe.srcdoc = finalSlides[currentSlideIndex];
+                slideIframe.onload = () => {
+                    if (slideIframe.contentWindow && slideIframe.contentDocument) {
+                        const editorScript = slideIframe.contentDocument.createElement('script');
+                        editorScript.src = `/static/editor.js?v=${Date.now()}`; 
+                        slideIframe.contentDocument.body.appendChild(editorScript);
+                    }
+                };
                 updateNavControls();
+                updateToolbarState();
+            }
+
+            function renderSlideSorter() {
+                slideSorterContainer.innerHTML = '';
+                finalSlides.forEach((html, index) => {
+                    if (!html) return;
+                    const thumb = document.createElement('div');
+                    thumb.className = 'slide-thumbnail';
+                    if (index === currentSlideIndex) { thumb.classList.add('selected'); }
+                    const thumbIframe = document.createElement('iframe');
+                    thumbIframe.className = 'thumbnail-iframe';
+                    thumbIframe.srcdoc = html;
+                    const overlay = document.createElement('div');
+                    overlay.className = 'thumbnail-overlay';
+                    overlay.textContent = index + 1;
+                    thumb.appendChild(thumbIframe);
+                    thumb.appendChild(overlay);
+                    thumb.addEventListener('click', () => {
+                        saveCurrentSlideEdits();
+                        currentSlideIndex = index;
+                        renderCurrentSlide();
+                        renderSlideSorter();
+                    });
+                    slideSorterContainer.appendChild(thumb);
+                });
             }
 
             function updateNavControls() {
@@ -290,38 +294,105 @@
                 nextBtn.disabled = currentSlideIndex >= total - 1;
             }
 
+            function saveCurrentSlideEdits() {
+                if (slideIframe.contentDocument && finalSlides[currentSlideIndex]) {
+                    const editedHtml = slideIframe.contentDocument.documentElement.outerHTML;
+                    finalSlides[currentSlideIndex] = editedHtml;
+                }
+            }
+
             function showPreviousSlide() {
                 if (currentSlideIndex > 0) {
+                    saveCurrentSlideEdits();
                     currentSlideIndex--;
-                    renderSlide();
+                    renderCurrentSlide();
+                    renderSlideSorter();
                 }
             }
 
             function showNextSlide() {
                 if (currentSlideIndex < finalSlides.length - 1) {
+                    saveCurrentSlideEdits();
                     currentSlideIndex++;
-                    renderSlide();
+                    renderCurrentSlide();
+                    renderSlideSorter();
                 }
             }
 
-            function toggleMaximize() {
-                if (!document.fullscreenElement) {
-                    presentationContainer.requestFullscreen().catch(err => {
-                        alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            function renderLayersPanel() {
+                layersList.innerHTML = '';
+                const doc = slideIframe.contentDocument;
+                if (!doc) return;
+                const layeredElements = Array.from(doc.querySelectorAll('[data-layer]'));
+                layeredElements.sort((a, b) => (parseInt(b.getAttribute('data-layer')) || 0) - (parseInt(a.getAttribute('data-layer')) || 0));
+                layeredElements.forEach(el => {
+                    const layerItem = document.createElement('div');
+                    layerItem.className = 'layer-item';
+                    layerItem.draggable = true;
+                    layerItem.dataset.elementId = el.id;
+                    const type = el.getAttribute('data-element-type') || 'element';
+                    const iconClass = type === 'textbox' ? 'fa-t' : type === 'image' ? 'fa-image' : 'fa-shapes';
+                    layerItem.innerHTML = `<i class="fa ${iconClass}"></i> <span>${type.charAt(0).toUpperCase() + type.slice(1)}</span>`;
+                    layersList.appendChild(layerItem);
+                });
+                addDragAndDropHandlers();
+            }
+
+            function addDragAndDropHandlers() {
+                const items = layersList.querySelectorAll('.layer-item');
+                let draggingItem = null;
+                items.forEach(item => {
+                    item.addEventListener('dragstart', () => {
+                        draggingItem = item;
+                        setTimeout(() => item.classList.add('dragging'), 0);
                     });
-                    maximizeBtn.innerHTML = '<i class="fa fa-compress"></i>';
-                } else {
-                    document.exitFullscreen();
-                    maximizeBtn.innerHTML = '<i class="fa fa-expand"></i>';
+                    item.addEventListener('dragend', () => {
+                        if (draggingItem) {
+                            draggingItem.classList.remove('dragging');
+                            draggingItem = null;
+                            updateLayersFromPanel();
+                        }
+                    });
+                });
+                layersList.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(layersList, e.clientY);
+                    const current = layersList.querySelector('.dragging');
+                    if (afterElement == null) {
+                        layersList.appendChild(current);
+                    } else {
+                        layersList.insertBefore(current, afterElement);
+                    }
+                });
+            }
+
+            function getDragAfterElement(container, y) {
+                const draggableElements = [...container.querySelectorAll('.layer-item:not(.dragging)')];
+                return draggableElements.reduce((closest, child) => {
+                    const box = child.getBoundingClientRect();
+                    const offset = y - box.top - box.height / 2;
+                    if (offset < 0 && offset > closest.offset) {
+                        return { offset: offset, element: child };
+                    } else {
+                        return closest;
+                    }
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }
+
+            function updateLayersFromPanel() {
+                const layerItems = layersList.querySelectorAll('.layer-item');
+                const totalLayers = layerItems.length;
+                const commands = [];
+                layerItems.forEach((item, index) => {
+                    const elementId = item.dataset.elementId;
+                    const newLayerIndex = totalLayers - 1 - index;
+                    commands.push({ elementId, newLayerIndex });
+                });
+                if (slideIframe.contentWindow) {
+                    slideIframe.contentWindow.postMessage({ type: 'REORDER_LAYERS', payload: commands }, '*');
                 }
             }
             
-            document.addEventListener('fullscreenchange', () => {
-                if (!document.fullscreenElement) {
-                    maximizeBtn.innerHTML = '<i class="fa fa-expand"></i>';
-                }
-            });
-
             async function handleExport() {
                 if (finalSlides.length === 0) {
                     alert("Please generate a presentation before exporting.");
@@ -329,19 +400,17 @@
                 }
                 exportBtn.disabled = true;
                 exportBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Exporting...';
-
                 try {
+                    saveCurrentSlideEdits();
                     const response = await fetch('/api/export', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ conversation_id: conversationId })
+                        body: JSON.stringify({
+                            conversation_id: conversationId,
+                            slides_html: finalSlides
+                        })
                     });
-
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw new Error(error.error || 'Export failed');
-                    }
-
+                    if (!response.ok) { throw new Error((await response.json()).error || 'Export failed'); }
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
@@ -352,7 +421,6 @@
                     a.click();
                     window.URL.revokeObjectURL(url);
                     a.remove();
-
                 } catch (e) {
                     console.error("Export error:", e);
                     alert(`Failed to export presentation: ${e.message}`);
@@ -361,6 +429,8 @@
                     exportBtn.innerHTML = '<i class="fa fa-file-powerpoint"></i> Export PPTX';
                 }
             }
+            
+            updateToolbarState();
         });
     </script>
 </body>

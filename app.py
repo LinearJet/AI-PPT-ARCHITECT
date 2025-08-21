@@ -61,23 +61,20 @@ def export_presentation():
     """Exports the current presentation state to a PPTX file."""
     data = request.get_json()
     conv_id = data.get('conversation_id')
+    # --- NEW: Get edited HTML directly from the client request ---
+    slides_html = data.get('slides_html')
 
-    if not conv_id or conv_id not in agent_sessions:
+    if not conv_id:
         return jsonify({"error": "Invalid conversation_id"}), 400
-
-    session = agent_sessions[conv_id]
     
-    if not session["slides_html"]:
-        return jsonify({"error": "No presentation has been generated yet."}), 400
-
-    sorted_slides_html = [
-        session["slides_html"][i] 
-        for i in sorted(session["slides_html"].keys())
-    ]
+    # --- NEW: Check for the new payload ---
+    if not slides_html or not isinstance(slides_html, list):
+        return jsonify({"error": "No presentation slides provided for export."}), 400
 
     # --- 2. USE THE NEW STATIC IMAGE EXPORTER ---
     async def run_export():
-        exporter = StaticImageExporter(sorted_slides_html)
+        # The exporter already accepts a list of HTML strings.
+        exporter = StaticImageExporter(slides_html)
         return await exporter.export()
 
     try:

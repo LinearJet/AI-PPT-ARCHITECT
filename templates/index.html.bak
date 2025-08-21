@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Presentation Agent</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --surface-color: #2c2c2c;
+            --primary-text-color: #f0f0f0;
+            --secondary-text-color: #a0a0a0;
+            --accent-color: #6A5ACD;
+            --border-color: #444;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        html, body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--primary-text-color);
+            margin: 0;
+            height: 100%;
+            overflow: hidden; /* Prevent whole page from scrolling */
+        }
+        #app {
+            display: grid;
+            grid-template-columns: 400px 1fr; 
+            height: 100vh;
+            gap: 1rem;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        #chat-container {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--surface-color);
+            border-radius: 12px;
+            overflow: hidden; /* Important for child scrolling */
+        }
+        #chat-log {
+            flex-grow: 1; /* Allows this element to fill available space */
+            padding: 1rem;
+            overflow-y: auto; /* Makes only the log scrollable */
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .chat-message {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            line-height: 1.5;
+            max-width: 90%;
+            white-space: pre-wrap; /* Respect newlines in messages */
+        }
+        .user-message {
+            background-color: var(--accent-color);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+        .agent-message {
+            background-color: #3a3a3c;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+        #message-input-container {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+        }
+        #message-input {
+            flex-grow: 1;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--primary-text-color);
+            font-size: 1rem;
+        }
+        #send-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--accent-color);
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        #presentation-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: relative;
+        }
+        #slide-iframe-container {
+            width: 100%;
+            flex-grow: 1;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+        #slide-iframe { width: 100%; height: 100%; border: none; }
+        #nav-controls { display: flex; justify-content: space-between; align-items: center; }
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--primary-text-color);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #slide-counter { font-size: 0.9rem; color: var(--secondary-text-color); }
+        
+        #maximize-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        #presentation-container:hover #maximize-btn { opacity: 1; }
+
+        @media (max-width: 1024px) {
+            #app { 
+                grid-template-columns: 1fr; 
+                height: auto; /* Allow page to grow on mobile */
+                overflow-y: auto; /* Allow whole page to scroll on mobile */
+            }
+            #chat-container { 
+                min-height: 40vh; 
+                max-height: 50vh; /* Constrain chat height */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div id="chat-container">
+            <div id="chat-log">
+                <div class="agent-message">Hello! What kind of presentation can I create for you today? Please provide a topic (e.g., "The Solar System").</div>
+            </div>
+            <div id="message-input-container">
+                <input id="message-input" placeholder="Type your message...">
+                <button id="send-btn"><i class="fa fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <div id="presentation-container">
+            <button id="maximize-btn"><i class="fa fa-expand"></i></button>
+            <div id="slide-iframe-container">
+                <iframe id="slide-iframe" title="Presentation Slide"></iframe>
+            </div>
+            <div id="nav-controls">
+                <button id="prev-btn" class="nav-btn" disabled>Previous</button>
+                <span id="slide-counter">Slide 0 / 0</span>
+                <button id="next-btn" class="nav-btn" disabled>Next</button>
+                <button id="export-btn" class="nav-btn" style="margin-left: auto;">
+                    <i class="fa fa-file-powerpoint"></i> Export PPTX
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- PHASE 1: NEW STATE MANAGEMENT ---
+            let conversationHistory = [];
+            let presentationState = { theme: {}, slides: [] };
+            let finalSlides = []; // Kept for now for UI display continuity
+            let currentSlideIndex = 0;
+            let conversationId = `conv_${Date.now()}`;
+
+            const chatLog = document.getElementById('chat-log');
+            const messageInput = document.getElementById('message-input');
+            const sendBtn = document.getElementById('send-btn');
+            const slideIframe = document.getElementById('slide-iframe');
+            const prevBtn = document.getElementById('prev-btn');
+            const nextBtn = document.getElementById('next-btn');
+            const slideCounter = document.getElementById('slide-counter');
+            const maximizeBtn = document.getElementById('maximize-btn');
+            const presentationContainer = document.getElementById('presentation-container');
+            const exportBtn = document.getElementById('export-btn');
+
+            sendBtn.addEventListener('click', handleSendMessage);
+            messageInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                }
+            });
+            prevBtn.addEventListener('click', showPreviousSlide);
+            nextBtn.addEventListener('click', showNextSlide);
+            maximizeBtn.addEventListener('click', toggleMaximize);
+            exportBtn.addEventListener('click', handleExport);
+
+            function addMessageToLog(sender, text) {
+                const messageEl = document.createElement('div');
+                messageEl.classList.add('chat-message', `${sender}-message`);
+                messageEl.textContent = text;
+                chatLog.appendChild(messageEl);
+                chatLog.scrollTop = chatLog.scrollHeight;
+            }
+
+            async function handleSendMessage() {
+                const message = messageInput.value.trim();
+                if (!message) return;
+
+                addMessageToLog('user', message);
+                conversationHistory.push({ role: 'user', content: message });
+                messageInput.value = '';
+                sendBtn.disabled = true;
+
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        conversation_id: conversationId,
+                        history: conversationHistory
+                    })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    
+                    let boundary;
+                    while ((boundary = buffer.indexOf('\n\n')) !== -1) {
+                        const dataStr = buffer.substring(0, boundary).trim();
+                        buffer = buffer.substring(boundary + 2);
+                        if (dataStr.startsWith('data: ')) {
+                            try {
+                                const json = JSON.parse(dataStr.substring(6));
+                                await processStreamEvent(json); // Now async
+                            } catch (e) { console.warn("Error parsing stream data:", e); }
+                        }
+                    }
+                }
+                sendBtn.disabled = false;
+            }
+
+            async function processStreamEvent(event) {
+                const data = event.data;
+                if (event.type === 'status_update') {
+                    addMessageToLog('agent', data.message);
+                    conversationHistory.push({ role: 'agent', content: data.message });
+                } else if (event.type === 'new_slide' || event.type === 'slide_update') {
+                    // --- PHASE 1: PARSING LOGIC INTEGRATION ---
+                    
+                    // 1. Keep old logic for display continuity during this phase
+                    if (event.type === 'new_slide') {
+                        finalSlides.push(data.html);
+                    } else { // slide_update
+                        finalSlides[data.slide_number - 1] = data.html;
+                    }
+                    
+                    // 2. Call the new parser to build the structured state
+                    const slideObject = await parseHtmlToSlideObject(data.html, data.slide_number);
+
+                    // 3. Update the new presentationState object
+                    if (event.type === 'new_slide') {
+                        presentationState.slides.push(slideObject);
+                    } else { // slide_update
+                        presentationState.slides[data.slide_number - 1] = slideObject;
+                    }
+
+                    // 4. Capture the theme on the first slide
+                    if (data.theme) {
+                        presentationState.theme = data.theme;
+                    }
+
+                    // 5. Log for verification
+                    console.log(`[Phase 1] Parsed slide ${data.slide_number}. Current state:`, JSON.parse(JSON.stringify(presentationState)));
+
+                    currentSlideIndex = data.slide_number - 1;
+                    renderSlide();
+                }
+            }
+
+            // --- PHASE 1: NEW HTML-to-JSON PARSER ---
+            function parseHtmlToSlideObject(htmlString, slideNumber) {
+                return new Promise((resolve) => {
+                    const tempFrame = document.createElement('iframe');
+                    tempFrame.style.cssText = 'position: absolute; width: 1280px; height: 720px; left: -9999px; top: -9999px;';
+                    document.body.appendChild(tempFrame);
+
+                    tempFrame.onload = () => {
+                        try {
+                            const doc = tempFrame.contentWindow.document;
+                            const win = tempFrame.contentWindow;
+                            const slide = {
+                                id: `slide_${slideNumber}_${Date.now()}`,
+                                background: '',
+                                elements: []
+                            };
+
+                            // Extract slide background
+                            const bodyStyle = win.getComputedStyle(doc.body);
+                            slide.background = bodyStyle.backgroundImage !== 'none' ? bodyStyle.backgroundImage : bodyStyle.backgroundColor;
+
+                            // Find all potential elements (absolutely positioned direct children of body)
+                            const potentialElements = Array.from(doc.body.children);
+                            potentialElements.forEach((el, index) => {
+                                if (['STYLE', 'SCRIPT', 'LINK'].includes(el.tagName)) return;
+
+                                const computed = win.getComputedStyle(el);
+                                if (computed.display === 'none' || computed.visibility === 'hidden') return;
+                                
+                                const elementObject = {
+                                    id: `el_${slideNumber}_${index}_${Date.now()}`,
+                                    type: 'unknown',
+                                    content: '',
+                                    properties: {
+                                        position: { x: computed.left, y: computed.top },
+                                        size: { width: computed.width, height: computed.height },
+                                        zIndex: computed.zIndex,
+                                        transform: computed.transform,
+                                        opacity: computed.opacity,
+                                    }
+                                };
+
+                                // Determine element type and extract specific properties
+                                const imgChild = el.querySelector('img');
+                                const canvasChild = el.querySelector('canvas');
+                                const svgChild = el.querySelector('svg');
+
+                                if (imgChild) {
+                                    elementObject.type = 'image';
+                                    elementObject.properties.source = imgChild.src;
+                                    elementObject.properties.clipPath = computed.clipPath;
+                                    elementObject.properties.borderRadius = computed.borderRadius;
+                                } else if (canvasChild) {
+                                    elementObject.type = 'chart';
+                                    // Chart data would need to be re-extracted or stored elsewhere
+                                } else if (svgChild) {
+                                    elementObject.type = 'shape';
+                                    elementObject.content = el.innerHTML; // Store the raw SVG
+                                } else if (el.innerText.trim().length > 0) {
+                                    elementObject.type = 'textbox';
+                                    elementObject.content = el.innerText;
+                                    elementObject.properties.font = {
+                                        family: computed.fontFamily,
+                                        size: computed.fontSize,
+                                        weight: computed.fontWeight,
+                                        style: computed.fontStyle,
+                                        color: computed.color,
+                                        textAlign: computed.textAlign,
+                                        lineHeight: computed.lineHeight,
+                                    };
+                                    elementObject.properties.backgroundColor = computed.backgroundColor;
+                                } else {
+                                    // It might be a container or decorative block
+                                    elementObject.type = 'block';
+                                    elementObject.properties.backgroundColor = computed.backgroundColor;
+                                    elementObject.properties.borderRadius = computed.borderRadius;
+                                }
+                                
+                                slide.elements.push(elementObject);
+                            });
+                            
+                            resolve(slide);
+
+                        } catch (e) {
+                            console.error("Error parsing slide HTML:", e);
+                            resolve(null); // Resolve with null on error
+                        } finally {
+                            document.body.removeChild(tempFrame);
+                        }
+                    };
+                    tempFrame.srcdoc = htmlString;
+                });
+            }
+
+
+            function renderSlide() {
+                if (finalSlides.length === 0) return;
+                slideIframe.srcdoc = finalSlides[currentSlideIndex];
+                updateNavControls();
+            }
+
+            function updateNavControls() {
+                const total = finalSlides.length;
+                slideCounter.textContent = `Slide ${total > 0 ? currentSlideIndex + 1 : 0} / ${total}`;
+                prevBtn.disabled = currentSlideIndex === 0;
+                nextBtn.disabled = currentSlideIndex >= total - 1;
+            }
+
+            function showPreviousSlide() {
+                if (currentSlideIndex > 0) {
+                    currentSlideIndex--;
+                    renderSlide();
+                }
+            }
+
+            function showNextSlide() {
+                if (currentSlideIndex < finalSlides.length - 1) {
+                    currentSlideIndex++;
+                    renderSlide();
+                }
+            }
+
+            function toggleMaximize() {
+                if (!document.fullscreenElement) {
+                    presentationContainer.requestFullscreen().catch(err => {
+                        alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+                    });
+                    maximizeBtn.innerHTML = '<i class="fa fa-compress"></i>';
+                } else {
+                    document.exitFullscreen();
+                    maximizeBtn.innerHTML = '<i class="fa fa-expand"></i>';
+                }
+            }
+            
+            document.addEventListener('fullscreenchange', () => {
+                if (!document.fullscreenElement) {
+                    maximizeBtn.innerHTML = '<i class="fa fa-expand"></i>';
+                }
+            });
+
+            async function handleExport() {
+                if (finalSlides.length === 0) {
+                    alert("Please generate a presentation before exporting.");
+                    return;
+                }
+                exportBtn.disabled = true;
+                exportBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Exporting...';
+
+                try {
+                    const response = await fetch('/api/export', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ conversation_id: conversationId })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'Export failed');
+                    }
+
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'presentation.pptx';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                } catch (e) {
+                    console.error("Export error:", e);
+                    alert(`Failed to export presentation: ${e.message}`);
+                } finally {
+                    exportBtn.disabled = false;
+                    exportBtn.innerHTML = '<i class="fa fa-file-powerpoint"></i> Export PPTX';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

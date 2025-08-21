@@ -4,16 +4,18 @@ import os
 import json
 import time
 import requests
-from google import genai
-from google.genai import types
+import colorgram
+from io import BytesIO
+from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Use a model that supports thinking, as per user's example and notebook
-MODEL_ID = "gemini-2.5-flash-lite"
-# Define a reusable thinking configuration
-THINKING_CONFIG = types.ThinkingConfig(thinking_budget=4096)
+MODEL_ID = "gemini-2.5-flash-lite-preview-06-17"
+GENERATION_CONFIG = genai.types.GenerationConfig(temperature=0.8)
 
 # --- CRITICAL FIX: Remove failing public instances, use local only ---
 SEARXNG_INSTANCE_URLS = [
@@ -25,80 +27,17 @@ HEADERS = {
 REQUEST_TIMEOUT = 25
 IMAGE_SEARCH_RETRIES = 2 # How many times to try different queries
 
-class InfographicsAgent:
-    """
-    A specialized agent to generate rich, data-driven infographic slides.
-    """
-    def __init__(self):
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-
-    def _call_llm(self, prompt):
-        """Calls the LLM with thinking enabled."""
-        config = types.GenerateContentConfig(
-            temperature=0.8,
-            thinking_config=THINKING_CONFIG
-        )
-        response = self.client.models.generate_content(
-            model=MODEL_ID,
-            contents=prompt,
-            config=config
-        )
-        return response
-
-    def generate_html(self, description, data_snippets):
-        prompt = f"""
-        You are a world-class data visualization artist and creative technologist.
-        Your task is to create a single, self-contained, visually stunning HTML file for a presentation slide.
-        This is not a standard slide; it is a dynamic, high-effort infographic.
-
-        **Concept Description:** {description}
-        **Supporting Data Snippets:**
-        ---
-        {data_snippets}
-        ---
-
-        **CRITICAL Design & Technology Requirements:**
-        1.  **Self-Contained HTML:** The output MUST be a single HTML file. All CSS and JavaScript must be embedded in `<style>` and `<script>` tags.
-        2.  **Modern Libraries:** Use modern, powerful libraries for visualization.
-            - For complex data viz, charts, and graphs: Use **D3.js** or **Chart.js**.
-            - For diagrams and flowcharts: Use **Mermaid.js**.
-            - For 3D elements: Use **Three.js**.
-            - Load libraries from a reliable CDN (e.g., cdnjs).
-        3.  **Visual Excellence:** This is paramount. Do not create a simple chart on a white background.
-            - **Composition:** Think about layout, balance, and visual flow. Use CSS Grid or Flexbox for sophisticated arrangements.
-            - **Color Palette:** Use a modern, harmonious color palette.
-            - **Typography:** Use Google Fonts to enhance readability and style.
-            - **Animation & Interactivity:** Add subtle animations (e.g., on-load transitions, hover effects) to make the infographic feel alive. The visualization should be engaging.
-        4.  **Data Integration:** The visualization MUST accurately represent the provided `data_snippets`. Synthesize the data into a compelling narrative.
-        5.  **Emoji/Visual Manipulation:** As requested, you can creatively manipulate emojis or construct visuals using HTML/CSS/JS to create unique infographic elements where appropriate.
-        6.  **Code Quality:** Write clean, well-commented HTML, CSS, and JavaScript.
-
-        **Output ONLY the complete, raw HTML code starting with `<!DOCTYPE html>`. No explanations, no markdown.**
-        """
-        response = self._call_llm(prompt)
-        return response.text.strip().replace("```html", "").replace("```", "")
-
-
 class PresentationAgent:
     """
     An agent that orchestrates the creation and editing of a professional presentation
     through a conversational interface.
     """
     def __init__(self):
-        self.client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        self.model = genai.GenerativeModel(MODEL_ID)
         self.presentation_plan = None # This will store the state of our presentation
 
-    def _call_llm(self, prompt, enable_thinking=False):
-        config = types.GenerateContentConfig(temperature=0.8)
-        if enable_thinking:
-            config.thinking_config = THINKING_CONFIG
-        
-        response = self.client.models.generate_content(
-            model=MODEL_ID,
-            contents=prompt,
-            config=config
-        )
-        return response
+    def _call_llm(self, prompt):
+        return self.model.generate_content(prompt, generation_config=GENERATION_CONFIG)
 
     def _yield_event(self, event_type, data):
         return f"data: {json.dumps({'type': event_type, 'data': data})}\n\n"
@@ -227,6 +166,28 @@ class PresentationAgent:
         print("All SearXNG instances failed for data search.")
         return None
 
+    def _get_palette_from_image_url(self, image_url: str, num_colors: int = 6) -> list[str]:
+        """
+        Downloads an image from a URL and extracts a color palette.
+        Returns a list of hex color strings.
+        """
+        if not image_url:
+            return []
+        try:
+            print(f"Extracting color palette from: {image_url}")
+            response = requests.get(image_url, timeout=15, headers=HEADERS)
+            response.raise_for_status()
+            
+            img = BytesIO(response.content)
+            colors = colorgram.extract(img, num_colors)
+            
+            palette = [f"#{c.rgb.r:02x}{c.rgb.g:02x}{c.rgb.b:02x}" for c in colors]
+            print(f"Extracted palette: {palette}")
+            return palette
+        except Exception as e:
+            print(f"Could not extract color palette from {image_url}: {e}")
+            return []
+
     def _get_chart_data_from_search(self, data_query, chart_type):
         """Generator that searches for data, processes it with an LLM, and yields updates."""
         yield self._yield_event('status_update', {'message': f"Searching for data to build chart: '{data_query}'..."})
@@ -276,35 +237,43 @@ class PresentationAgent:
             print(f"Failed to structure chart data with LLM: {e}")
             return None
 
-    def _generate_slide_html(self, slide_data, theme_data, style):
+    def _generate_slide_html(self, slide_data, theme_data, style, palette):
         prompt = f"""
-        You are an expert HTML/CSS designer with a keen eye for artistic composition, creating a slide with a '{style}' feel.
-        The output must be a complete, self-contained HTML document.
+        You are an expert HTML/CSS designer. Your mission is to create a single, self-contained, **structurally annotated** HTML file for a presentation slide.
 
         **Theme Data:** {json.dumps(theme_data)}
         **Slide Data:** {json.dumps(slide_data)}
+        **Color Palette (derived from slide image):** {json.dumps(palette)}
 
-        **CRITICAL Design & Code Instructions:**
-        1.  **HTML Structure:** Generate a complete HTML document starting with `<!DOCTYPE html>`.
-        2.  **Styling:** Use Tailwind CSS via its CDN. Embed all custom CSS within a `<style>` tag in the `<head>`.
-        3.  **Fonts:** Import the specific Google Fonts defined in the theme's `fontPairing`.
-        4.  **Backgrounds:** If the theme contains a `backgroundStyle` object (e.g., a gradient), apply it to the `<body>`. Otherwise, use the solid `backgroundColor`.
-        5.  **Dynamic Image Styling (`image_styles`):** If this list exists, it is the primary instruction for image rendering.
-            a. For each object in `image_styles`, create an absolutely positioned `<div>` wrapper.
-            b. Apply the `position` values (`left`, `top`, `width`, `height`) to this wrapper.
-            c. Inside the wrapper, place the `<img>` tag (using the corresponding URL from `image_urls`) with `w-full h-full object-cover` classes.
-            d. **Shape Clipping:** Apply a `clip-path` to the wrapper based on the `shape` property. Use a `<style>` tag for complex clip-paths.
-                - `circle`: Use Tailwind's `rounded-full` class.
-                - `pill`: Use Tailwind's `rounded-full` class.
-                - `trapezoid`: Use `clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);`
-                - `parallelogram`: Use `clip-path: polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);`
-                - `kite`: Use `clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);`
-            e. **Emphasis:** Apply Tailwind shadow classes (e.g., `shadow-2xl`) based on the `shadow` property.
-        6.  **Standard Image Layouts:** If `image_styles` is NOT present but `image_urls` is, use the `layout` property to create a balanced grid or column layout.
-        7.  **Charts (`chart`):** If a `chart` object with `data` exists, render it using Chart.js.
-        8.  **Shapes (`shapes`):** If `shapes` exists, render them as inline SVG elements with absolute positioning.
-        9.  **Content:** Place the `title` and `body` thoughtfully, ensuring readability and harmony with the visual elements.
-        10. **Output ONLY the HTML code.** No explanations or markdown formatting.
+        **--- INVIOLABLE CONTRACT ---**
+        These rules are non-negotiable. The frontend application relies on this exact structure to function.
+
+        1.  **LAYERS ARE MANDATORY:** Every distinct visual element (text, image, shape, chart) MUST be wrapped in a container `div` with a `data-layer` attribute. Layers determine the stacking order (z-index). Start with `data-layer="0"` for the rearmost elements and increment.
+            - Example: `<div data-layer="1" ...><img ...></div>`
+            - Example: `<div data-layer="2" ...>...text...</div>`
+
+        2.  **ELEMENT TYPES ARE MANDATORY:** Every `data-layer` container MUST also have a `data-element-type` attribute.
+            - Use `"textbox"` for text containers.
+            - Use `"image"` for image containers.
+            - Use `"shape"` for SVG containers.
+            - Use `"chart"` for chart containers.
+            - Example: `<div data-layer="2" data-element-type="textbox" ...>...</div>`
+
+        3.  **TEXTBOXES MUST BE EDITABLE:** Every element with `data-element-type="textbox"` MUST have the `contentEditable="true"` attribute.
+            - Example: `<div data-layer="2" data-element-type="textbox" contentEditable="true" ...>...</div>`
+
+        4.  **ACCESSIBILITY IS MANDATORY:** All text MUST have a high contrast ratio against its background. Text must be easily readable.
+
+        **--- DESIGN & CODE INSTRUCTIONS ---**
+        - **HTML Structure:** Start with `<!DOCTYPE html>`.
+        - **Styling:** Use the Tailwind CSS CDN. Use `position: absolute;` for all layered elements to allow user manipulation.
+        - **Editor Hints:** Include this CSS in a `<style>` tag to provide visual cues for the user:
+          ```css
+          [contentEditable="true"]:hover {{ outline: 2px dashed rgba(106, 90, 205, 0.7); }}
+          img:hover {{ outline: 2px dashed rgba(106, 90, 205, 0.7); }}
+          ```
+        - **Fonts:** Import and use the Google Fonts from the theme's `fontPairing`.
+        - **Final Output:** Respond with ONLY the raw HTML code. Do not include explanations or markdown.
         """
         response = self._call_llm(prompt)
         return response.text.strip().replace("```html", "").replace("```", "")
@@ -345,21 +314,22 @@ class PresentationAgent:
         **Your Task & Design Principles:**
         1.  **Visual Theme:** Invent a unique, professional theme with colors and fonts. Optionally add a `backgroundStyle` for gradients.
         2.  **Content & Layouts:** Determine slide count, write concise text, and choose a base `layout`.
-        3.  **Visual Elements (Use Purposefully):**
+        3.  **Visual Elements (Use Purposefully & Creatively):**
             *   **Charts & Graphs:** If data is needed, include a `chart` object with a `type` and `data_query`.
-            *   **NEW - Infographics:** For complex data stories, you can use the layout type `"infographic"`. An infographic slide should have a `description` of the visual concept and a `data_query` to fetch the necessary information.
-            *   **Decorative Shapes:** Add a `shapes` list for visual interest.
-            *   **Dynamic Image Styling:** For slides with images, you can now add an `image_styles` list. This is for artistic placement and shaping, overriding the base `layout`.
+            *   **Decorative Shapes:** Add a `shapes` list for visual interest. Be creative with their placement and form to enhance the slide's message.
+            *   **NEW - Dynamic Image Styling:** For slides with images, you can now add an `image_styles` list. This is for artistic placement and shaping, overriding the base `layout`.
                 *   Each object in the list corresponds to an image from `image_search_queries`.
-                *   It can contain: `"shape"`: `"circle"`, `"pill"`, `"trapezoid"`, `"parallelogram"`, `"kite"`.
-                *   It can contain: `"position"`: An object with `"x"`, `"y"`, `"width"`, `"height"` as percentage strings (e.g., `"x": "10%"`).
-                *   It can contain: `"shadow"`: A Tailwind shadow class like `"shadow-lg"` or `"shadow-2xl"`.
-                *   Use this to create focus points and visually engaging, asymmetrical compositions.
+                *   It can contain:
+                    *   `"shape"`: `"circle"`, `"pill"`, `"trapezoid"`, `"parallelogram"`, `"kite"`.
+                    *   `"position"`: An object with `"x"`, `"y"`, `"width"`, `"height"` as percentage strings (e.g., `"x": "10%"`).
+                    *   `"shadow"`: A Tailwind shadow class like `"shadow-lg"` or `"shadow-2xl"`.
+                *   Example: `"image_styles": [{{"shape": "circle", "position": {{"x": "70%", "y": "20%", "width": "25%", "height": "40%"}}, "shadow": "shadow-2xl"}}]`
+                *   **Use this to create focus points and visually engaging, asymmetrical compositions that guide the viewer's eye.**
         4.  **Title Slide Rule:** The first slide MUST use a `background_image_content_overlay` layout and have one image query.
         
         **CRITICAL: Output a single, raw, valid JSON object with "theme" and "slides" as top-level keys.**
         """
-        plan_response = self._call_llm(plan_prompt, enable_thinking=True)
+        plan_response = self._call_llm(plan_prompt)
         
         try:
             plan = json.loads(plan_response.text.strip().replace("```json", "").replace("```", ""))
@@ -380,23 +350,22 @@ class PresentationAgent:
         yield self._yield_event('status_update', {'message': "Got it. I will revise the presentation based on your feedback."})
         
         edit_prompt = f"""
-        You are a JSON transformation engine. Your sole purpose is to update the provided JSON object based on the user's latest request, following the rules precisely.
-        Your primary goal is to produce a valid JSON object that reflects the user's change.
+        You are a presentation editor. Update the provided JSON plan based on the user's latest request.
+        You can modify text, layouts, and decorative `shapes`.
 
-        **CRITICAL INSTRUCTIONS FOR MODIFICATION:**
-        - **To change an image:** You MUST delete the `image_urls` key from the relevant slide and add a new `image_search_queries` key with new search terms. This is the ONLY way to trigger a new image search.
-        - **To change a chart:** You MUST delete the `chart.data` key and add a `chart.data_query` key.
+        **CRITICAL INSTRUCTIONS FOR CHANGING VISUALS:**
+        - **To change an image:** Delete `image_urls` and add `image_search_queries` with new terms.
+        - **To change a chart:** Delete `chart.data` and add a `chart.data_query`.
         - **To change image shape/position:** Modify the `image_styles` list for the slide. You can add this list if it doesn't exist to create a dynamic layout.
-        - **For all other changes:** Modify text, layouts, or decorative `shapes` as needed.
 
         **Current Presentation Plan (JSON):** {json.dumps(self.presentation_plan, indent=2)}
         **Conversation History:** {json.dumps(conversation_history, indent=2)}
         
         **User's Last Request:** "{conversation_history[-1]['content']}"
 
-        **CRITICAL: Respond with the *complete, updated* presentation plan as a single, raw JSON object. Do not add any explanations or markdown formatting.**
+        **CRITICAL: Respond with the *complete, updated* presentation plan as a single, raw JSON object.**
         """
-        edit_response = self._call_llm(edit_prompt, enable_thinking=True)
+        edit_response = self._call_llm(edit_prompt)
         try:
             new_plan = json.loads(edit_response.text.strip().replace("```json", "").replace("```", ""))
         except json.JSONDecodeError:
@@ -417,7 +386,7 @@ class PresentationAgent:
             **User's Last Request:** "{conversation_history[-1]['content']}"
             **Updated Presentation Plan (JSON):**
             """
-            retry_response = self._call_llm(retry_prompt, enable_thinking=True)
+            retry_response = self._call_llm(retry_prompt)
             try:
                 new_plan = json.loads(retry_response.text.strip().replace("```json", "").replace("```", ""))
             except json.JSONDecodeError:
@@ -452,38 +421,6 @@ class PresentationAgent:
         for i in indices_to_process:
             if i >= len(self.presentation_plan['slides']): continue # Skip if index is out of bounds
             slide_data = self.presentation_plan['slides'][i]
-
-            # --- Handle Infographics ---
-            if slide_data.get('layout') == 'infographic':
-                yield self._yield_event('status_update', {'message': f"Searching for data for infographic on slide {i+1}..."})
-                data_query = slide_data.get('data_query')
-                html_content = ""
-                if data_query:
-                    search_results = self._search_for_data(data_query)
-                    if search_results:
-                        yield self._yield_event('status_update', {'message': f"Data found. Generating infographic for slide {i+1}..."})
-                        infographics_agent = InfographicsAgent()
-                        html_content = infographics_agent.generate_html(slide_data.get('description', ''), search_results)
-                    else:
-                        yield self._yield_event('status_update', {'message': f"Could not find data for infographic. Creating placeholder."})
-                        html_content = "<html><body><h1>Infographic</h1><p>Data could not be loaded.</p></body></html>"
-                else:
-                    html_content = "<html><body><h1>Infographic</h1><p>No data query provided.</p></body></html>"
-                
-                event_type = 'slide_update' if is_update and i < total_slides_before_update else 'new_slide'
-                event_data = {
-                    'html': html_content, 
-                    'slide_number': i + 1, 
-                    'total_slides': len(self.presentation_plan['slides']),
-                    'animations': slide_data.get('animations', {})
-                }
-                if not is_update and i == 0:
-                    event_data['theme'] = theme
-                elif is_update and theme != self.presentation_plan.get('theme'):
-                        event_data['theme'] = theme
-                yield self._yield_event(event_type, event_data)
-                time.sleep(0.5)
-                continue # Move to the next slide index
 
             # --- Handle Charts (Data Sourcing) ---
             if "chart" in slide_data and "data_query" in slide_data["chart"] and "data" not in slide_data["chart"]:
@@ -525,9 +462,15 @@ class PresentationAgent:
                         slide_data["image_urls"].append(image_url)
                 del slide_data["image_search_queries"]
 
+            # --- Get Color Palette from the first available image ---
+            palette = []
+            if slide_data.get("image_urls"):
+                # Use the first image to define the slide's palette
+                palette = self._get_palette_from_image_url(slide_data["image_urls"][0])
+
             # --- Generate HTML ---
             yield self._yield_event('status_update', {'message': f"Designing slide {i+1}: '{slide_data.get('title')}'..."})
-            html_content = self._generate_slide_html(slide_data, theme, style)
+            html_content = self._generate_slide_html(slide_data, theme, style, palette)
             event_type = 'slide_update' if is_update and i < total_slides_before_update else 'new_slide'
             event_data = {
                 'html': html_content, 

@@ -49,7 +49,7 @@ class StaticImageExporter:
                 print(f" - Capturing screenshot for Slide {i + 1}/{num_slides}...")
                 await page.set_content(html_content)
                 # --- FIX 2: Extend timeout for animations to complete ---
-                await page.wait_for_timeout(2000) 
+                await page.wait_for_timeout(5000) 
                 
                 screenshot_bytes = await page.screenshot(type='png')
                 screenshots.append(io.BytesIO(screenshot_bytes))
