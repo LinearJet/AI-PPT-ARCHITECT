@@ -24,89 +24,221 @@
             width: 100vw;
             overflow: hidden;
         }
-        #app { display: grid; grid-template-columns: 1fr 240px; height: 100%; }
-        #main-content { display: grid; grid-template-columns: 400px 1fr; gap: 1rem; padding: 1rem; box-sizing: border-box; overflow: hidden; }
-        #side-panel { display: flex; flex-direction: column; gap: 1rem; min-height: 0; }
-        #chat-container { display: flex; flex-direction: column; background-color: var(--surface-color); border-radius: 12px; overflow: hidden; flex-grow: 1; min-height: 0; }
-        #chat-log { flex-grow: 1; padding: 1rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+        #app { display: grid; grid-template-columns: 320px 1fr 240px; height: 100%; }
+        #main-content { display: flex; flex-direction: column; gap: 1rem; padding: 1rem; box-sizing: border-box; overflow: hidden; }
+        #side-panel { display: flex; flex-direction: column; gap: 1rem; min-height: 0; padding: 1rem 0 1rem 1rem; }
+        .panel-container { background-color: var(--surface-color); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; transition: all 0.3s ease; }
+        .panel-header { padding: 0.75rem; font-weight: bold; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+        .panel-toggle-btn { background: none; border: none; color: var(--secondary-text-color); cursor: pointer; font-size: 1rem; }
+        .panel-body { overflow-y: auto; flex-grow: 1; min-height: 0; transition: all 0.3s ease; }
+        .panel-container.collapsed .panel-body { display: none; }
+        .panel-container.collapsed { flex-grow: 0 !important; height: auto !important; }
+        #chat-container { flex-grow: 1; }
+        #chat-log { flex-grow: 1; padding: 1rem; display: flex; flex-direction: column; gap: 1rem; }
         .chat-message { padding: 0.75rem 1rem; border-radius: 8px; line-height: 1.5; max-width: 90%; white-space: pre-wrap; }
         .user-message { background-color: var(--accent-color); color: white; align-self: flex-end; }
         .agent-message { background-color: #3a3a3c; align-self: flex-start; }
         #message-input-container { padding: 1rem; border-top: 1px solid var(--border-color); display: flex; gap: 0.5rem; }
         #message-input { flex-grow: 1; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--primary-text-color); font-size: 1rem; }
         #send-btn { padding: 0.75rem 1rem; border: none; border-radius: 8px; background-color: var(--accent-color); color: white; cursor: pointer; font-size: 1rem; }
-        #layers-panel-container { background-color: var(--surface-color); border-radius: 12px; display: flex; flex-direction: column; height: 40%; flex-shrink: 0; }
-        #layers-panel-header { padding: 0.75rem; font-weight: bold; border-bottom: 1px solid var(--border-color); }
-        #layers-list { padding: 0.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+        #layers-panel-container { height: 50%; flex-shrink: 0; }
+        #layers-list { padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
         .layer-item { background-color: #3a3a3c; padding: 0.5rem 0.75rem; border-radius: 4px; cursor: grab; display: flex; align-items: center; gap: 0.5rem; border: 1px solid transparent; }
         .layer-item.dragging { opacity: 0.5; background: var(--accent-color); }
-        .layer-item:hover { border-color: var(--secondary-text-color); }
-        #editor-area { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
-        #toolbar { background-color: var(--surface-color); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+        .layer-item.locked { background-color: var(--accent-color); color: white; }
+        .layer-item-controls { margin-left: auto; display: flex; gap: 0.5rem; }
+        .layer-control-btn { cursor: pointer; padding: 0.25rem; color: var(--secondary-text-color); }
+        .layer-control-btn:hover { color: #fff; }
+        #editor-area { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; flex-grow: 1; }
+        #toolbar-container { background-color: var(--surface-color); border-radius: 8px; flex-shrink: 0; }
+        #toolbar-tabs { display: flex; padding: 0.25rem 0.5rem 0; border-bottom: 1px solid var(--border-color); }
+        .toolbar-tab { background: none; border: none; color: var(--secondary-text-color); padding: 0.5rem 1rem; cursor: pointer; border-bottom: 2px solid transparent; font-size: 0.9rem; }
+        .toolbar-tab.active { color: var(--primary-text-color); border-bottom-color: var(--accent-color); }
+        .toolbar { display: none; align-items: center; gap: 0.5rem; padding: 0.5rem; flex-wrap: wrap; }
+        .toolbar.active { display: flex; }
         .toolbar-btn, .toolbar-select, .toolbar-color-picker { background: none; border: 1px solid transparent; color: var(--primary-text-color); font-size: 1rem; height: 32px; border-radius: 4px; cursor: pointer; }
         .toolbar-btn { width: 32px; }
         .toolbar-select { padding: 0 0.5rem; background-color: var(--bg-color); border: 1px solid var(--border-color); }
         .toolbar-color-picker { width: 32px; padding: 2px; background-color: var(--bg-color); border: 1px solid var(--border-color); }
         .toolbar-btn:hover:not(:disabled), .toolbar-select:hover:not(:disabled) { background-color: var(--border-color); }
         .toolbar-btn:disabled, .toolbar-select:disabled, .toolbar-color-picker:disabled { opacity: 0.4; cursor: not-allowed; }
+        .toolbar-btn.active { background-color: var(--accent-color); color: white; }
         .toolbar-separator { width: 1px; height: 24px; background-color: var(--border-color); margin: 0 0.5rem; }
-        #presentation-container { display: flex; flex-direction: column; gap: 0.5rem; position: relative; flex-grow: 1; min-height: 0; }
-        #slide-iframe-container { width: 100%; flex-grow: 1; aspect-ratio: 16 / 9; background-color: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; background-color: var(--surface-color); min-width: 120px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2); z-index: 100; border-radius: 4px; border: 1px solid var(--border-color); }
+        .dropdown-content a { color: var(--primary-text-color); padding: 8px 12px; text-decoration: none; display: block; font-size: 0.9rem; }
+        .dropdown-content a:hover { background-color: var(--border-color); }
+        .dropdown:hover .dropdown-content { display: block; }
+        #presentation-container { display: flex; flex-direction: column; gap: 0.5rem; position: relative; flex-grow: 1; min-height: 0; justify-content: center; align-items: center; }
+        #canvas-wrapper { width: 100%; aspect-ratio: 16 / 9; position: relative; }
+        #slide-iframe-container { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; background-color: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); transform-origin: top left; }
         #slide-iframe { width: 100%; height: 100%; border: none; }
-        #nav-controls { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        #nav-controls { display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; width: 100%; }
         .nav-btn { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid var(--border-color); background-color: var(--surface-color); color: var(--primary-text-color); cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
         .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         #slide-counter { font-size: 0.9rem; color: var(--secondary-text-color); }
-        #slide-sorter-container { background-color: var(--bg-color); padding: 0.5rem; overflow-y: auto; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 0.75rem; }
+        #slide-sorter-container { background-color: var(--bg-color); padding: 1rem 1rem 1rem 0; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        #slide-sorter-body { display: flex; flex-direction: column; gap: 0.75rem; overflow-y: auto; }
         .slide-thumbnail { width: 100%; aspect-ratio: 16 / 9; background-color: #000; border: 2px solid var(--border-color); border-radius: 4px; cursor: pointer; position: relative; overflow: hidden; flex-shrink: 0; }
         .slide-thumbnail.selected { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+        .slide-thumbnail.dragging { opacity: 0.4; }
         .thumbnail-iframe { width: 1280px; height: 720px; transform-origin: top left; transform: scale(calc(220 / 1280)); border: none; pointer-events: none; }
         .thumbnail-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: var(--secondary-text-color); background-color: rgba(0,0,0,0.5); }
+        .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--surface-color); padding: 1.5rem; border-radius: 12px; width: 90%; max-width: 600px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; }
+        .modal-close-btn { background: none; border: none; color: var(--secondary-text-color); font-size: 1.5rem; cursor: pointer; }
+        .modal-body { display: flex; flex-direction: column; gap: 1rem; }
+        .modal-input, .modal-select { width: 100%; padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); background-color: var(--bg-color); color: var(--primary-text-color); font-size: 1rem; box-sizing: border-box; }
+        .modal-footer { display: flex; justify-content: flex-end; gap: 0.5rem; }
+        .modal-btn { padding: 0.5rem 1rem; border: none; border-radius: 6px; cursor: pointer; }
+        .modal-btn-primary { background-color: var(--accent-color); color: white; }
+        .modal-btn-secondary { background-color: #3a3a3c; color: var(--primary-text-color); }
+        #image-search-results { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.5rem; max-height: 40vh; overflow-y: auto; }
+        #image-search-results img { width: 100%; height: 100%; object-fit: cover; cursor: pointer; border-radius: 4px; border: 2px solid transparent; }
+        #image-search-results img:hover { border-color: var(--accent-color); }
+        .spinner { font-size: 2rem; text-align: center; }
+        
+        #mobile-controls { display: none; }
+
         @media (max-width: 1024px) {
-            #app { grid-template-columns: 1fr; overflow-y: auto; }
-            #slide-sorter-container { display: none; }
-            #main-content { grid-template-columns: 1fr; padding: 0.5rem; }
-            #side-panel { order: 2; flex-direction: row; height: 50vh; }
-            #chat-container { width: 60%; }
-            #layers-panel-container { width: 40%; }
-            #editor-area { order: 1; }
+            #app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+            #main-content { padding: 0.5rem; }
+            #presentation-container { padding: 10px 0 60px 0; }
+            #canvas-wrapper { width: 95%; margin: 0 auto; }
+            
+            #side-panel, #slide-sorter-container {
+                position: fixed;
+                z-index: 2000;
+                background-color: var(--bg-color);
+                transition: transform 0.3s ease-in-out;
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+            }
+            #side-panel {
+                top: 10px;
+                left: 10px;
+                bottom: 60px;
+                width: 300px;
+                transform: translateX(-110%);
+                padding: 0;
+            }
+            #slide-sorter-container {
+                left: 10px;
+                right: 10px;
+                bottom: 60px;
+                height: 150px;
+                transform: translateY(120%);
+                padding: 0;
+            }
+            #side-panel.is-open, #slide-sorter-container.is-open {
+                transform: translate(0, 0);
+            }
+            #slide-sorter-body { flex-direction: row; gap: 0.75rem; padding: 0.5rem; align-items: center; }
+            .slide-thumbnail { width: 160px; height: 90px; }
+            .thumbnail-iframe { transform: scale(calc(160 / 1280)); }
+
+            #mobile-controls {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: var(--surface-color);
+                justify-content: space-around;
+                padding: 0.5rem;
+                border-top: 1px solid var(--border-color);
+                z-index: 2001;
+            }
+            .mobile-control-btn {
+                background: none;
+                border: none;
+                color: var(--primary-text-color);
+                font-size: 1.2rem;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.25rem;
+                cursor: pointer;
+            }
+            .mobile-control-btn span { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
     <div id="app">
-        <div id="main-content">
-            <div id="side-panel">
-                <div id="chat-container">
+        <div id="side-panel">
+            <div id="chat-container" class="panel-container">
+                <div class="panel-header"><span class="panel-title">Chat</span><button class="panel-toggle-btn"><i class="fa fa-chevron-down"></i></button></div>
+                <div class="panel-body" style="display: flex; flex-direction: column;">
                     <div id="chat-log"><div class="agent-message">Hello! What kind of presentation can I create for you today?</div></div>
                     <div id="message-input-container">
                         <input id="message-input" placeholder="Type your message..."><button id="send-btn"><i class="fa fa-paper-plane"></i></button>
                     </div>
                 </div>
-                <div id="layers-panel-container">
-                    <div id="layers-panel-header">Layers</div>
-                    <div id="layers-list"></div>
-                </div>
             </div>
+            <div id="layers-panel-container" class="panel-container">
+                <div class="panel-header"><span class="panel-title">Layers</span><button class="panel-toggle-btn"><i class="fa fa-chevron-down"></i></button></div>
+                <div id="layers-list" class="panel-body"></div>
+            </div>
+        </div>
+        <div id="main-content">
             <div id="editor-area">
-                <div id="toolbar">
-                    <select id="select-font-family" class="toolbar-select" title="Font Family"><option>Arial</option><option>Verdana</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option></select>
-                    <select id="select-font-size" class="toolbar-select" title="Font Size"><option>12</option><option>16</option><option>20</option><option>24</option><option>32</option><option>48</option><option>64</option></select>
-                    <input type="color" id="input-color" class="toolbar-color-picker" title="Text Color" value="#FFFFFF">
-                    <div class="toolbar-separator"></div>
-                    <button id="btn-bold" class="toolbar-btn" title="Bold"><i class="fa fa-bold"></i></button>
-                    <button id="btn-italic" class="toolbar-btn" title="Italic"><i class="fa fa-italic"></i></button>
-                    <button id="btn-underline" class="toolbar-btn" title="Underline"><i class="fa fa-underline"></i></button>
-                    <div class="toolbar-separator"></div>
-                    <button id="btn-align-left" class="toolbar-btn" title="Align Left"><i class="fa fa-align-left"></i></button>
-                    <button id="btn-align-center" class="toolbar-btn" title="Align Center"><i class="fa fa-align-center"></i></button>
-                    <button id="btn-align-right" class="toolbar-btn" title="Align Right"><i class="fa fa-align-right"></i></button>
-                    <button id="btn-align-justify" class="toolbar-btn" title="Align Justify"><i class="fa fa-align-justify"></i></button>
-                    <div class="toolbar-separator"></div>
-                    <button id="btn-delete" class="toolbar-btn" title="Delete Element"><i class="fa fa-trash"></i></button>
+                <div id="toolbar-container">
+                    <div id="toolbar-tabs">
+                        <button class="toolbar-tab active" data-tab="home-toolbar">Home</button>
+                        <button class="toolbar-tab" data-tab="insert-toolbar">Insert</button>
+                    </div>
+                    <div id="home-toolbar" class="toolbar active">
+                        <select id="select-font-family" class="toolbar-select" title="Font Family"><option>Arial</option><option>Verdana</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option></select>
+                        <select id="select-font-size" class="toolbar-select" title="Font Size"><option>12</option><option>16</option><option>20</option><option>24</option><option>32</option><option>48</option><option>64</option></select>
+                        <input type="color" id="input-color" class="toolbar-color-picker" title="Text Color" value="#FFFFFF">
+                        <div class="toolbar-separator"></div>
+                        <button id="btn-bold" class="toolbar-btn" title="Bold"><i class="fa fa-bold"></i></button>
+                        <button id="btn-italic" class="toolbar-btn" title="Italic"><i class="fa fa-italic"></i></button>
+                        <button id="btn-underline" class="toolbar-btn" title="Underline"><i class="fa fa-underline"></i></button>
+                        <div class="toolbar-separator"></div>
+                        <button id="btn-align-left" class="toolbar-btn" title="Align Left"><i class="fa fa-align-left"></i></button>
+                        <button id="btn-align-center" class="toolbar-btn" title="Align Center"><i class="fa fa-align-center"></i></button>
+                        <button id="btn-align-right" class="toolbar-btn" title="Align Right"><i class="fa fa-align-right"></i></button>
+                        <button id="btn-align-justify" class="toolbar-btn" title="Align Justify"><i class="fa fa-align-justify"></i></button>
+                        <div class="toolbar-separator"></div>
+                        <button id="btn-delete" class="toolbar-btn" title="Delete Element"><i class="fa fa-trash"></i></button>
+                    </div>
+                    <div id="insert-toolbar" class="toolbar">
+                        <button id="btn-insert-textbox" class="toolbar-btn" title="Insert Textbox"><i class="fa fa-font"></i></button>
+                        <div class="toolbar-separator"></div>
+                        <button id="btn-insert-image-local" class="toolbar-btn" title="Insert Image from Device"><i class="fa fa-image"></i></button>
+                        <button id="btn-insert-image-search" class="toolbar-btn" title="Search for Image"><i class="fa fa-magnifying-glass"></i></button>
+                        <input type="file" id="image-upload-input" accept="image/*" style="display: none;">
+                        <div class="toolbar-separator"></div>
+                        <div class="dropdown">
+                            <button class="toolbar-btn" title="Insert Shape"><i class="fa fa-shapes"></i></button>
+                            <div class="dropdown-content shape-dropdown">
+                                <a href="#" data-shape="rectangle">Rectangle</a>
+                                <a href="#" data-shape="circle">Circle</a>
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <button class="toolbar-btn" title="Insert Icon"><i class="fa fa-star"></i></button>
+                            <div class="dropdown-content icon-dropdown">
+                                <a href="#" data-icon="fa-solid fa-star">Star</a>
+                                <a href="#" data-icon="fa-solid fa-heart">Heart</a>
+                                <a href="#" data-icon="fa-solid fa-check">Check</a>
+                                <a href="#" data-icon="fa-solid fa-arrow-right">Arrow</a>
+                            </div>
+                        </div>
+                        <div class="toolbar-separator"></div>
+                        <button id="btn-insert-chart" class="toolbar-btn" title="Insert Chart"><i class="fa fa-chart-pie"></i></button>
+                        <button id="btn-insert-table" class="toolbar-btn" title="Insert Table"><i class="fa fa-table"></i></button>
+                        <button id="btn-insert-video" class="toolbar-btn" title="Insert Video"><i class="fa-brands fa-youtube"></i></button>
+                    </div>
                 </div>
                 <div id="presentation-container">
-                    <div id="slide-iframe-container"><iframe id="slide-iframe" title="Presentation Slide"></iframe></div>
+                    <div id="canvas-wrapper">
+                        <div id="slide-iframe-container"><iframe id="slide-iframe" title="Presentation Slide"></iframe></div>
+                    </div>
                     <div id="nav-controls">
                         <button id="prev-btn" class="nav-btn" disabled>Previous</button>
                         <span id="slide-counter">Slide 0 / 0</span>
@@ -116,364 +248,84 @@
                 </div>
             </div>
         </div>
-        <div id="slide-sorter-container"></div>
+        <div id="slide-sorter-container" class="panel-container">
+            <div class="panel-header"><span class="panel-title">Slides</span><button class="panel-toggle-btn"><i class="fa fa-chevron-down"></i></button></div>
+            <div id="slide-sorter-body" class="panel-body"></div>
+        </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            let finalSlides = []; 
-            let currentSlideIndex = 0;
-            let conversationHistory = [];
-            let conversationId = `conv_${Date.now()}`;
-            let selectedElementInfo = { id: null, type: null };
+    <!-- Mobile Controls -->
+    <div id="mobile-controls">
+        <button class="mobile-control-btn" data-panel="side-panel"><i class="fa fa-comments"></i><span>Tools</span></button>
+        <button class="mobile-control-btn" data-panel="slide-sorter-container"><i class="fa fa-images"></i><span>Slides</span></button>
+    </div>
 
-            const slideSorterContainer = document.getElementById('slide-sorter-container');
-            const chatLog = document.getElementById('chat-log');
-            const messageInput = document.getElementById('message-input');
-            const sendBtn = document.getElementById('send-btn');
-            const slideIframe = document.getElementById('slide-iframe');
-            const prevBtn = document.getElementById('prev-btn');
-            const nextBtn = document.getElementById('next-btn');
-            const slideCounter = document.getElementById('slide-counter');
-            const exportBtn = document.getElementById('export-btn');
-            const layersList = document.getElementById('layers-list');
-            const textFormatControls = [ document.getElementById('select-font-family'), document.getElementById('select-font-size'), document.getElementById('input-color'), document.getElementById('btn-bold'), document.getElementById('btn-italic'), document.getElementById('btn-underline'), document.getElementById('btn-align-left'), document.getElementById('btn-align-center'), document.getElementById('btn-align-right'), document.getElementById('btn-align-justify') ];
-            const btnDelete = document.getElementById('btn-delete');
+    <!-- Modals -->
+    <div id="image-search-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Search for an Image</h3>
+                <button class="modal-close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; gap: 0.5rem;">
+                    <input type="text" id="image-search-input" class="modal-input" placeholder="e.g., futuristic cityscape">
+                    <button id="image-search-btn" class="modal-btn modal-btn-primary">Search</button>
+                </div>
+                <div id="image-search-results"></div>
+            </div>
+        </div>
+    </div>
 
-            sendBtn.addEventListener('click', handleSendMessage);
-            messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
-            prevBtn.addEventListener('click', showPreviousSlide);
-            nextBtn.addEventListener('click', showNextSlide);
-            exportBtn.addEventListener('click', handleExport);
-            textFormatControls.forEach(control => {
-                control.addEventListener('change', handleFormatChange);
-                control.addEventListener('click', handleFormatChange);
-            });
-            btnDelete.addEventListener('click', deleteSelectedElement);
+    <div id="chart-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header"><h3 class="modal-title">Insert Chart</h3><button class="modal-close-btn">&times;</button></div>
+            <div class="modal-body">
+                <label>What data should the chart show?</label>
+                <input type="text" id="chart-data-query" class="modal-input" placeholder="e.g., market share of AI companies 2024">
+                <label>Chart Type</label>
+                <select id="chart-type-select" class="modal-select">
+                    <option value="bar">Bar Chart</option>
+                    <option value="line">Line Chart</option>
+                    <option value="pie">Pie Chart</option>
+                    <option value="doughnut">Doughnut Chart</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary">Cancel</button>
+                <button id="create-chart-btn" class="modal-btn modal-btn-primary">Create Chart</button>
+            </div>
+        </div>
+    </div>
 
-            window.addEventListener('message', (event) => {
-                const { type, payload } = event.data;
-                if (type === 'selection_change') {
-                    selectedElementInfo = { id: payload.elementId, type: payload.elementType };
-                    updateToolbarState();
-                } else if (type === 'element_update') {
-                    if (!payload.elementId || !payload.newProps) return;
-                    updateFinalSlidesDOM(payload.elementId, payload.newProps);
-                } else if (type === 'SAVE_SLIDE_STATE') {
-                    saveCurrentSlideEdits();
-                } else if (type === 'EDITOR_READY') {
-                    renderLayersPanel();
-                }
-            });
-            
-            function updateFinalSlidesDOM(elementId, newProps) {
-                let currentHtml = finalSlides[currentSlideIndex];
-                if (!currentHtml) return;
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(currentHtml, 'text/html');
-                const elementToUpdate = doc.getElementById(elementId);
-                if (elementToUpdate) {
-                    if (newProps.style) {
-                         elementToUpdate.setAttribute('style', newProps.style);
-                    }
-                    if (typeof newProps.content !== 'undefined') {
-                        elementToUpdate.innerHTML = newProps.content;
-                    }
-                    finalSlides[currentSlideIndex] = doc.documentElement.outerHTML;
-                }
-            }
+    <div id="table-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header"><h3 class="modal-title">Insert Table</h3><button class="modal-close-btn">&times;</button></div>
+            <div class="modal-body" style="flex-direction: row; align-items: center; gap: 1rem;">
+                <label>Columns: <input type="number" id="table-cols-input" class="modal-input" value="3" min="1"></label>
+                <label>Rows: <input type="number" id="table-rows-input" class="modal-input" value="3" min="1"></label>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary">Cancel</button>
+                <button id="create-table-btn" class="modal-btn modal-btn-primary">Create Table</button>
+            </div>
+        </div>
+    </div>
 
-            function handleFormatChange(e) {
-                const target = e.currentTarget;
-                let command, value;
-                if (target.id.startsWith('btn-align-')) {
-                    command = `justify${target.id.split('-')[2]}`;
-                } else if (target.id.startsWith('btn-')) {
-                    command = target.id.replace('btn-', '');
-                } else if (target.id === 'select-font-family') {
-                    command = 'fontName';
-                    value = target.value;
-                } else if (target.id === 'select-font-size') {
-                    command = 'fontSize';
-                    const sizeMap = {'12': 2, '16': 3, '20': 4, '24': 5, '32': 6, '48': 7, '64': 7};
-                    value = sizeMap[target.value] || 3;
-                } else if (target.id === 'input-color') {
-                    command = 'foreColor';
-                    value = target.value;
-                }
-                if (command) {
-                    formatText(command, value);
-                }
-            }
+    <div id="video-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header"><h3 class="modal-title">Insert YouTube Video</h3><button class="modal-close-btn">&times;</button></div>
+            <div class="modal-body">
+                <label>YouTube Video URL</label>
+                <input type="text" id="video-url-input" class="modal-input" placeholder="https://www.youtube.com/watch?v=...">
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn modal-btn-secondary">Cancel</button>
+                <button id="create-video-btn" class="modal-btn modal-btn-primary">Insert</button>
+            </div>
+        </div>
+    </div>
 
-            function formatText(command, value = null) {
-                if (selectedElementInfo.type === 'textbox' && slideIframe.contentWindow) {
-                    slideIframe.contentWindow.postMessage({ type: 'FORMAT_TEXT', payload: { command, value } }, '*');
-                }
-            }
-
-            function deleteSelectedElement() {
-                if (selectedElementInfo.id && slideIframe.contentWindow) {
-                     slideIframe.contentWindow.postMessage({ type: 'DELETE_ELEMENT' }, '*');
-                }
-            }
-
-            function updateToolbarState() {
-                const isTextboxSelected = selectedElementInfo.type === 'textbox';
-                const isAnyElementSelected = !!selectedElementInfo.id;
-                textFormatControls.forEach(control => control.disabled = !isTextboxSelected);
-                btnDelete.disabled = !isAnyElementSelected;
-            }
-
-            async function handleSendMessage() {
-                const message = messageInput.value.trim();
-                if (!message) return;
-                addMessageToLog('user', message);
-                conversationHistory.push({ role: 'user', content: message });
-                messageInput.value = '';
-                sendBtn.disabled = true;
-                try {
-                    const response = await fetch('/api/chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ conversation_id: conversationId, history: conversationHistory })
-                    });
-                    if (!response.ok) { throw new Error(`Server error: ${response.statusText}`); }
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    let buffer = '';
-                    while (true) {
-                        const { value, done } = await reader.read();
-                        if (done) break;
-                        buffer += decoder.decode(value, { stream: true });
-                        let boundary;
-                        while ((boundary = buffer.indexOf('\n\n')) !== -1) {
-                            const dataStr = buffer.substring(0, boundary).trim();
-                            buffer = buffer.substring(boundary + 2);
-                            if (dataStr.startsWith('data: ')) {
-                                try {
-                                    const json = JSON.parse(dataStr.substring(6));
-                                    await processStreamEvent(json);
-                                } catch (e) { console.warn("Error parsing stream data:", e); }
-                            }
-                        }
-                    }
-                } catch (error) {
-                    console.error("Failed to send message:", error);
-                    addMessageToLog('agent', "Sorry, I encountered an error. Please try again.");
-                } finally {
-                    sendBtn.disabled = false;
-                }
-            }
-            
-            function addMessageToLog(sender, text) {
-                const messageEl = document.createElement('div');
-                messageEl.classList.add('chat-message', `${sender}-message`);
-                messageEl.textContent = text;
-                chatLog.appendChild(messageEl);
-                chatLog.scrollTop = chatLog.scrollHeight;
-            }
-
-            async function processStreamEvent(event) {
-                const data = event.data;
-                if (event.type === 'status_update') {
-                    addMessageToLog('agent', data.message);
-                    conversationHistory.push({ role: 'agent', content: data.message });
-                } else if (event.type === 'new_slide' || event.type === 'slide_update') {
-                    const slideIndex = data.slide_number - 1;
-                    finalSlides[slideIndex] = data.html;
-                    currentSlideIndex = slideIndex;
-                    renderCurrentSlide();
-                    renderSlideSorter();
-                }
-            }
-
-            function renderCurrentSlide() {
-                if (finalSlides.length === 0 || !finalSlides[currentSlideIndex]) {
-                    layersList.innerHTML = ''; return;
-                };
-                slideIframe.srcdoc = finalSlides[currentSlideIndex];
-                slideIframe.onload = () => {
-                    if (slideIframe.contentWindow && slideIframe.contentDocument) {
-                        const editorScript = slideIframe.contentDocument.createElement('script');
-                        editorScript.src = `/static/editor.js?v=${Date.now()}`; 
-                        slideIframe.contentDocument.body.appendChild(editorScript);
-                    }
-                };
-                updateNavControls();
-                updateToolbarState();
-            }
-
-            function renderSlideSorter() {
-                slideSorterContainer.innerHTML = '';
-                finalSlides.forEach((html, index) => {
-                    if (!html) return;
-                    const thumb = document.createElement('div');
-                    thumb.className = 'slide-thumbnail';
-                    if (index === currentSlideIndex) { thumb.classList.add('selected'); }
-                    const thumbIframe = document.createElement('iframe');
-                    thumbIframe.className = 'thumbnail-iframe';
-                    thumbIframe.srcdoc = html;
-                    const overlay = document.createElement('div');
-                    overlay.className = 'thumbnail-overlay';
-                    overlay.textContent = index + 1;
-                    thumb.appendChild(thumbIframe);
-                    thumb.appendChild(overlay);
-                    thumb.addEventListener('click', () => {
-                        saveCurrentSlideEdits();
-                        currentSlideIndex = index;
-                        renderCurrentSlide();
-                        renderSlideSorter();
-                    });
-                    slideSorterContainer.appendChild(thumb);
-                });
-            }
-
-            function updateNavControls() {
-                const total = finalSlides.length;
-                slideCounter.textContent = `Slide ${total > 0 ? currentSlideIndex + 1 : 0} / ${total}`;
-                prevBtn.disabled = currentSlideIndex === 0;
-                nextBtn.disabled = currentSlideIndex >= total - 1;
-            }
-
-            function saveCurrentSlideEdits() {
-                if (slideIframe.contentDocument && finalSlides[currentSlideIndex]) {
-                    const editedHtml = slideIframe.contentDocument.documentElement.outerHTML;
-                    finalSlides[currentSlideIndex] = editedHtml;
-                }
-            }
-
-            function showPreviousSlide() {
-                if (currentSlideIndex > 0) {
-                    saveCurrentSlideEdits();
-                    currentSlideIndex--;
-                    renderCurrentSlide();
-                    renderSlideSorter();
-                }
-            }
-
-            function showNextSlide() {
-                if (currentSlideIndex < finalSlides.length - 1) {
-                    saveCurrentSlideEdits();
-                    currentSlideIndex++;
-                    renderCurrentSlide();
-                    renderSlideSorter();
-                }
-            }
-
-            function renderLayersPanel() {
-                layersList.innerHTML = '';
-                const doc = slideIframe.contentDocument;
-                if (!doc) return;
-                const layeredElements = Array.from(doc.querySelectorAll('[data-layer]'));
-                layeredElements.sort((a, b) => (parseInt(b.getAttribute('data-layer')) || 0) - (parseInt(a.getAttribute('data-layer')) || 0));
-                layeredElements.forEach(el => {
-                    const layerItem = document.createElement('div');
-                    layerItem.className = 'layer-item';
-                    layerItem.draggable = true;
-                    layerItem.dataset.elementId = el.id;
-                    const type = el.getAttribute('data-element-type') || 'element';
-                    const iconClass = type === 'textbox' ? 'fa-t' : type === 'image' ? 'fa-image' : 'fa-shapes';
-                    layerItem.innerHTML = `<i class="fa ${iconClass}"></i> <span>${type.charAt(0).toUpperCase() + type.slice(1)}</span>`;
-                    layersList.appendChild(layerItem);
-                });
-                addDragAndDropHandlers();
-            }
-
-            function addDragAndDropHandlers() {
-                const items = layersList.querySelectorAll('.layer-item');
-                let draggingItem = null;
-                items.forEach(item => {
-                    item.addEventListener('dragstart', () => {
-                        draggingItem = item;
-                        setTimeout(() => item.classList.add('dragging'), 0);
-                    });
-                    item.addEventListener('dragend', () => {
-                        if (draggingItem) {
-                            draggingItem.classList.remove('dragging');
-                            draggingItem = null;
-                            updateLayersFromPanel();
-                        }
-                    });
-                });
-                layersList.addEventListener('dragover', e => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElement(layersList, e.clientY);
-                    const current = layersList.querySelector('.dragging');
-                    if (afterElement == null) {
-                        layersList.appendChild(current);
-                    } else {
-                        layersList.insertBefore(current, afterElement);
-                    }
-                });
-            }
-
-            function getDragAfterElement(container, y) {
-                const draggableElements = [...container.querySelectorAll('.layer-item:not(.dragging)')];
-                return draggableElements.reduce((closest, child) => {
-                    const box = child.getBoundingClientRect();
-                    const offset = y - box.top - box.height / 2;
-                    if (offset < 0 && offset > closest.offset) {
-                        return { offset: offset, element: child };
-                    } else {
-                        return closest;
-                    }
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-            }
-
-            function updateLayersFromPanel() {
-                const layerItems = layersList.querySelectorAll('.layer-item');
-                const totalLayers = layerItems.length;
-                const commands = [];
-                layerItems.forEach((item, index) => {
-                    const elementId = item.dataset.elementId;
-                    const newLayerIndex = totalLayers - 1 - index;
-                    commands.push({ elementId, newLayerIndex });
-                });
-                if (slideIframe.contentWindow) {
-                    slideIframe.contentWindow.postMessage({ type: 'REORDER_LAYERS', payload: commands }, '*');
-                }
-            }
-            
-            async function handleExport() {
-                if (finalSlides.length === 0) {
-                    alert("Please generate a presentation before exporting.");
-                    return;
-                }
-                exportBtn.disabled = true;
-                exportBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Exporting...';
-                try {
-                    saveCurrentSlideEdits();
-                    const response = await fetch('/api/export', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            conversation_id: conversationId,
-                            slides_html: finalSlides
-                        })
-                    });
-                    if (!response.ok) { throw new Error((await response.json()).error || 'Export failed'); }
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'presentation.pptx';
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    a.remove();
-                } catch (e) {
-                    console.error("Export error:", e);
-                    alert(`Failed to export presentation: ${e.message}`);
-                } finally {
-                    exportBtn.disabled = false;
-                    exportBtn.innerHTML = '<i class="fa fa-file-powerpoint"></i> Export PPTX';
-                }
-            }
-            
-            updateToolbarState();
-        });
-    </script>
+    <script src="/static/main.js" defer></script>
 </body>
 </html>
