@@ -43,9 +43,13 @@
         .layer-item:hover { border-color: var(--secondary-text-color); }
         #editor-area { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; }
         #toolbar { background-color: var(--surface-color); padding: 0.5rem; border-radius: 8px; display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
-        .toolbar-btn { background: none; border: 1px solid transparent; color: var(--primary-text-color); font-size: 1rem; width: 32px; height: 32px; border-radius: 4px; cursor: pointer; }
-        .toolbar-btn:hover:not(:disabled) { background-color: var(--border-color); }
-        .toolbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .toolbar-btn, .toolbar-select, .toolbar-color-picker { background: none; border: 1px solid transparent; color: var(--primary-text-color); font-size: 1rem; height: 32px; border-radius: 4px; cursor: pointer; }
+        .toolbar-btn { width: 32px; }
+        .toolbar-select { padding: 0 0.5rem; background-color: var(--bg-color); border: 1px solid var(--border-color); }
+        .toolbar-color-picker { width: 32px; padding: 2px; background-color: var(--bg-color); border: 1px solid var(--border-color); }
+        .toolbar-btn:hover:not(:disabled), .toolbar-select:hover:not(:disabled) { background-color: var(--border-color); }
+        .toolbar-btn:disabled, .toolbar-select:disabled, .toolbar-color-picker:disabled { opacity: 0.4; cursor: not-allowed; }
+        .toolbar-separator { width: 1px; height: 24px; background-color: var(--border-color); margin: 0 0.5rem; }
         #presentation-container { display: flex; flex-direction: column; gap: 0.5rem; position: relative; flex-grow: 1; min-height: 0; }
         #slide-iframe-container { width: 100%; flex-grow: 1; aspect-ratio: 16 / 9; background-color: #000; border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); }
         #slide-iframe { width: 100%; height: 100%; border: none; }
@@ -86,9 +90,20 @@
             </div>
             <div id="editor-area">
                 <div id="toolbar">
+                    <select id="select-font-family" class="toolbar-select" title="Font Family"><option>Arial</option><option>Verdana</option><option>Georgia</option><option>Times New Roman</option><option>Courier New</option></select>
+                    <select id="select-font-size" class="toolbar-select" title="Font Size"><option>12</option><option>16</option><option>20</option><option>24</option><option>32</option><option>48</option><option>64</option></select>
+                    <input type="color" id="input-color" class="toolbar-color-picker" title="Text Color" value="#FFFFFF">
+                    <div class="toolbar-separator"></div>
                     <button id="btn-bold" class="toolbar-btn" title="Bold"><i class="fa fa-bold"></i></button>
                     <button id="btn-italic" class="toolbar-btn" title="Italic"><i class="fa fa-italic"></i></button>
                     <button id="btn-underline" class="toolbar-btn" title="Underline"><i class="fa fa-underline"></i></button>
+                    <div class="toolbar-separator"></div>
+                    <button id="btn-align-left" class="toolbar-btn" title="Align Left"><i class="fa fa-align-left"></i></button>
+                    <button id="btn-align-center" class="toolbar-btn" title="Align Center"><i class="fa fa-align-center"></i></button>
+                    <button id="btn-align-right" class="toolbar-btn" title="Align Right"><i class="fa fa-align-right"></i></button>
+                    <button id="btn-align-justify" class="toolbar-btn" title="Align Justify"><i class="fa fa-align-justify"></i></button>
+                    <div class="toolbar-separator"></div>
+                    <button id="btn-delete" class="toolbar-btn" title="Delete Element"><i class="fa fa-trash"></i></button>
                 </div>
                 <div id="presentation-container">
                     <div id="slide-iframe-container"><iframe id="slide-iframe" title="Presentation Slide"></iframe></div>
@@ -121,19 +136,20 @@
             const nextBtn = document.getElementById('next-btn');
             const slideCounter = document.getElementById('slide-counter');
             const exportBtn = document.getElementById('export-btn');
-            const btnBold = document.getElementById('btn-bold');
-            const btnItalic = document.getElementById('btn-italic');
-            const btnUnderline = document.getElementById('btn-underline');
             const layersList = document.getElementById('layers-list');
+            const textFormatControls = [ document.getElementById('select-font-family'), document.getElementById('select-font-size'), document.getElementById('input-color'), document.getElementById('btn-bold'), document.getElementById('btn-italic'), document.getElementById('btn-underline'), document.getElementById('btn-align-left'), document.getElementById('btn-align-center'), document.getElementById('btn-align-right'), document.getElementById('btn-align-justify') ];
+            const btnDelete = document.getElementById('btn-delete');
 
             sendBtn.addEventListener('click', handleSendMessage);
             messageInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } });
             prevBtn.addEventListener('click', showPreviousSlide);
             nextBtn.addEventListener('click', showNextSlide);
             exportBtn.addEventListener('click', handleExport);
-            btnBold.addEventListener('click', () => formatText('bold'));
-            btnItalic.addEventListener('click', () => formatText('italic'));
-            btnUnderline.addEventListener('click', () => formatText('underline'));
+            textFormatControls.forEach(control => {
+                control.addEventListener('change', handleFormatChange);
+                control.addEventListener('click', handleFormatChange);
+            });
+            btnDelete.addEventListener('click', deleteSelectedElement);
 
             window.addEventListener('message', (event) => {
                 const { type, payload } = event.data;
@@ -146,7 +162,6 @@
                 } else if (type === 'SAVE_SLIDE_STATE') {
                     saveCurrentSlideEdits();
                 } else if (type === 'EDITOR_READY') {
-                    // --- CRITICAL FIX: Only render layers panel when the editor is ready ---
                     renderLayersPanel();
                 }
             });
@@ -168,17 +183,46 @@
                 }
             }
 
-            function formatText(command) {
+            function handleFormatChange(e) {
+                const target = e.currentTarget;
+                let command, value;
+                if (target.id.startsWith('btn-align-')) {
+                    command = `justify${target.id.split('-')[2]}`;
+                } else if (target.id.startsWith('btn-')) {
+                    command = target.id.replace('btn-', '');
+                } else if (target.id === 'select-font-family') {
+                    command = 'fontName';
+                    value = target.value;
+                } else if (target.id === 'select-font-size') {
+                    command = 'fontSize';
+                    const sizeMap = {'12': 2, '16': 3, '20': 4, '24': 5, '32': 6, '48': 7, '64': 7};
+                    value = sizeMap[target.value] || 3;
+                } else if (target.id === 'input-color') {
+                    command = 'foreColor';
+                    value = target.value;
+                }
+                if (command) {
+                    formatText(command, value);
+                }
+            }
+
+            function formatText(command, value = null) {
                 if (selectedElementInfo.type === 'textbox' && slideIframe.contentWindow) {
-                    slideIframe.contentWindow.postMessage({ type: 'FORMAT_TEXT', payload: { command } }, '*');
+                    slideIframe.contentWindow.postMessage({ type: 'FORMAT_TEXT', payload: { command, value } }, '*');
+                }
+            }
+
+            function deleteSelectedElement() {
+                if (selectedElementInfo.id && slideIframe.contentWindow) {
+                     slideIframe.contentWindow.postMessage({ type: 'DELETE_ELEMENT' }, '*');
                 }
             }
 
             function updateToolbarState() {
                 const isTextboxSelected = selectedElementInfo.type === 'textbox';
-                btnBold.disabled = !isTextboxSelected;
-                btnItalic.disabled = !isTextboxSelected;
-                btnUnderline.disabled = !isTextboxSelected;
+                const isAnyElementSelected = !!selectedElementInfo.id;
+                textFormatControls.forEach(control => control.disabled = !isTextboxSelected);
+                btnDelete.disabled = !isAnyElementSelected;
             }
 
             async function handleSendMessage() {
@@ -246,9 +290,7 @@
 
             function renderCurrentSlide() {
                 if (finalSlides.length === 0 || !finalSlides[currentSlideIndex]) {
-                    // Clear panels if no slide is active
-                    layersList.innerHTML = '';
-                    return;
+                    layersList.innerHTML = ''; return;
                 };
                 slideIframe.srcdoc = finalSlides[currentSlideIndex];
                 slideIframe.onload = () => {
